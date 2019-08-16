@@ -6,3 +6,5 @@
 #======================
 !dist/**/*
 !index.d.ts
+!index.js.flow
+!src/**

@@ -1,5 +1,6 @@
 import getScrollParent from './getScrollParent';
 import getParentNode from './getParentNode';
+import getReferenceNode from './getReferenceNode';
 import findCommonOffsetParent from './findCommonOffsetParent';
 import getOffsetRectRelativeToArbitraryNode from './getOffsetRectRelativeToArbitraryNode';
 import getViewportOffsetRectRelativeToArtbitraryNode from './getViewportOffsetRectRelativeToArtbitraryNode';
@@ -28,7 +29,7 @@ export default function getBoundaries(
   // NOTE: 1 DOM access here
 
   let boundaries = { top: 0, left: 0 };
-  const offsetParent = fixedPosition ? getFixedPositionOffsetParent(popper) : findCommonOffsetParent(popper, reference);
+  const offsetParent = fixedPosition ? getFixedPositionOffsetParent(popper) : findCommonOffsetParent(popper, getReferenceNode(reference));
 
   // Handle viewport case
   if (boundariesElement === 'viewport' ) {
@@ -69,10 +70,12 @@ export default function getBoundaries(
   }
 
   // Add paddings
-  boundaries.left += padding;
-  boundaries.top += padding;
-  boundaries.right -= padding;
-  boundaries.bottom -= padding;
+  padding = padding || 0;
+  const isPaddingNumber = typeof padding === 'number';
+  boundaries.left += isPaddingNumber ? padding : padding.left || 0; 
+  boundaries.top += isPaddingNumber ? padding : padding.top || 0; 
+  boundaries.right -= isPaddingNumber ? padding : padding.right || 0; 
+  boundaries.bottom -= isPaddingNumber ? padding : padding.bottom || 0; 
 
   return boundaries;
 }

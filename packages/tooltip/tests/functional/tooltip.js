@@ -45,7 +45,7 @@ describe('[tooltip.js]', () => {
       then(() => instance.hide());
 
       then(() => {
-        expect(document.querySelector('.tooltip').style.display).toBe('none');
+        expect(document.querySelector('.tooltip').style.visibility).toBe('hidden');
         done();
       });
     });
@@ -72,7 +72,7 @@ describe('[tooltip.js]', () => {
       then(() => instance.toggle());
 
       then(() => {
-        expect(document.querySelector('.tooltip').style.display).toBe('none');
+        expect(document.querySelector('.tooltip').style.visibility).toBe('hidden');
         done();
       });
     });
@@ -249,7 +249,7 @@ describe('[tooltip.js]', () => {
       });
     });
 
-    it('should use a function result as tooltip content', done => {
+    it('should use a string returned by a function as tooltip content', done => {
       instance = new Tooltip(reference, {
         title: () => 'foobar',
       });
@@ -260,6 +260,62 @@ describe('[tooltip.js]', () => {
         expect(
           document.querySelector('.tooltip .tooltip-inner').textContent
         ).toBe('foobar');
+        done();
+      });
+    });
+
+    it('should use a DOM node returned by a function as tooltip content', done => {
+      const content = document.createElement('div');
+      content.textContent = 'foobar';
+      instance = new Tooltip(reference, {
+        title: () => content,
+        html: true,
+      });
+
+      instance.show();
+
+      then(() => {
+        expect(
+          document.querySelector('.tooltip .tooltip-inner').innerHTML
+        ).toBe('<div>foobar</div>');
+        done();
+      });
+    });
+
+    it('should use a document fragment returned by a function as tooltip content', done => {
+      const content = document.createDocumentFragment();
+      const inner = document.createElement('div');
+      inner.textContent = 'test';
+      content.appendChild(inner);
+      instance = new Tooltip(reference, {
+        title: () => content,
+        html: true,
+      });
+
+      instance.show();
+
+      then(() => {
+        expect(
+          document.querySelector('.tooltip .tooltip-inner').innerHTML
+        ).toBe('<div>test</div>');
+        done();
+      });
+    });
+
+    it('should not use dom node returned by function as tooltip content if html option disabled', done => {
+      const content = document.createElement('div');
+      content.textContent = 'test';
+      instance = new Tooltip(reference, {
+        title: () => content,
+        html: false,
+      });
+
+      instance.show();
+
+      then(() => {
+        expect(
+          document.querySelector('.tooltip .tooltip-inner').innerHTML
+        ).toBe('');
         done();
       });
     });
@@ -390,7 +446,7 @@ describe('[tooltip.js]', () => {
       reference.dispatchEvent(new CustomEvent('mouseenter'));
       then(() => reference.dispatchEvent(new CustomEvent('mouseleave')), 200);
       then(() => {
-        expect(document.querySelector('.tooltip').style.display).toBe('none');
+        expect(document.querySelector('.tooltip').style.visibility).toBe('hidden');
         done();
       }, 200);
     });
@@ -416,7 +472,7 @@ describe('[tooltip.js]', () => {
           .dispatchEvent(new CustomEvent('mouseleave'))
       );
       then(() => {
-        expect(document.querySelector('.tooltip').style.display).toBe('none');
+        expect(document.querySelector('.tooltip').style.visibility).toBe('hidden');
         done();
       }, 200);
     });
@@ -443,7 +499,7 @@ describe('[tooltip.js]', () => {
       );
       then(() => reference.dispatchEvent(new CustomEvent('mouseenter')));
       then(() => {
-        expect(document.querySelector('.tooltip').style.display).toBe('');
+        expect(document.querySelector('.tooltip').style.visibility).toBe('visible');
         done();
       }, 200);
     });
@@ -482,6 +538,29 @@ describe('[tooltip.js]', () => {
       });
     });
 
+    it('should not flash the tooltip if mouse leaves reference before tooltip is shown', done => {
+      const delay = 500;
+      const hoverTime = 200;
+
+      instance = new Tooltip(reference, {
+        title: 'foobar',
+        trigger: 'hover',
+        delay,
+      });
+
+      spyOn(instance, '_show');
+      
+      expect(document.querySelector('.tooltip')).toBeNull();
+
+      then(() => reference.dispatchEvent(new CustomEvent('mouseenter')), hoverTime);
+      then(() => reference.dispatchEvent(new CustomEvent('mouseleave')), delay * 2);
+      
+      then(() => {
+        expect(instance._show).not.toHaveBeenCalled();
+        done()
+      });
+    });
+
     it('should hide a tooltip on click while open', done => {
       instance = new Tooltip(reference, {
         title: 'foobar',
@@ -493,7 +572,7 @@ describe('[tooltip.js]', () => {
       reference.dispatchEvent(new CustomEvent('click'));
       then(() => reference.dispatchEvent(new CustomEvent('click')));
       then(() => {
-        expect(document.querySelector('.tooltip').style.display).toBe('none');
+        expect(document.querySelector('.tooltip').style.visibility).toBe('hidden');
         done();
       });
     });
@@ -510,6 +589,49 @@ describe('[tooltip.js]', () => {
         offset: 10,
       }).show();
       expect(instance._popperOptions.modifiers.offset.offset).toBe(10);
+      done();
+    });
+
+    it('should hide on click outside with `options.closeOnClickOutside`', done => {
+      instance = new Tooltip(reference, {
+        title: 'foobar',
+        trigger: 'click',
+        closeOnClickOutside: true,
+      });
+      reference.dispatchEvent(new CustomEvent('click'));
+      then(() => expect(document.querySelector('.tooltip')).not.toBeNull());
+      then(() => document.body.dispatchEvent(new CustomEvent('mousedown')));
+      then(() => expect(document.querySelector('.tooltip').style.visibility).toBe('hidden'));
+      then(done);
+    });
+
+    it('should proxy the arrow modifier to the Popper.js instance', done => {
+      instance = new Tooltip(reference, {
+        title: 'test',
+        popperOptions: {
+          modifiers: {
+            arrow: {
+              enabled: false,
+            },
+          },
+        },
+      }).show();
+      expect(instance._popperOptions.modifiers.arrow.enabled).toBe(false);
+      done();
+    });
+
+    it('should proxy the offset modifier to the Popper.js instance', done => {
+      instance = new Tooltip(reference, {
+        title: 'test',
+        popperOptions: {
+          modifiers: {
+            offset: {
+              enabled: false,
+            },
+          },
+        },
+      }).show();
+      expect(instance._popperOptions.modifiers.offset.enabled).toBe(false);
       done();
     });
   });
